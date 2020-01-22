@@ -3,6 +3,11 @@ from sklearn.metrics import r2_score
 from matplotlib import pyplot
 import os
 import csv
+from arabic_reshaper import reshape as _reshape
+
+
+def reshape(s):
+    return ''.join(reversed(_reshape(s)))
 
 
 def is_float(s):
@@ -34,7 +39,10 @@ maximum_first_wavelength = 2
 counter = 0
 isin_counter = 0
 tot_profit = 0
+set_of_isins = set()
+set_of_experienced_isins = set()
 for isin_csv_path in os.listdir('tsedata/'):
+    set_of_isins.add(isin_csv_path)
     reader = csv.reader(open('tsedata/' + isin_csv_path, encoding='utf-16'))
     prices = []
     for row in reader:
@@ -106,18 +114,21 @@ for isin_csv_path in os.listdir('tsedata/'):
                 last_do = i
                 counter += 1
                 if profit > 0.1:
+                    pyplot.xlabel(reshape('شماره‌ی روز'))
+                    pyplot.ylabel(reshape('قیمت'))
                     pyplot.plot(
                         range(len(prices)),
                         prices
                     )
-                    fig = pyplot.figure()
                     pyplot.plot(*zip(*within_month_maximums))
                     pyplot.plot(*zip(*within_month_minimums))
-                    fig.suptitle('سلام')
+                    pyplot.tight_layout()
                     pyplot.show()
+                set_of_experienced_isins.add(isin_csv_path)
                 print(tot_profit / counter)
             except IndexError:
                 pass
 
 print(tot_profit / counter)
-print(isin_counter)
+print(len(set_of_isins), len(set_of_experienced_isins))
+
