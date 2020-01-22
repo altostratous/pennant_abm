@@ -1,4 +1,3 @@
-
 import numpy
 from sklearn.metrics import r2_score
 from matplotlib import pyplot
@@ -14,31 +13,10 @@ def is_float(s):
         return False
 
 
-def turn_to_lines(minimums, param):
-    last_len = len(minimums) + 1
-    while last_len == len(minimums):
-        last_len = len(minimums)
-        caught = False
-        for i in range(len(minimums) - 2, 1, -1):
-            if caught:
-                caught = False
-                continue
-            if abs((minimums[i - 1][1] + minimums[i + 1][1]) / 2 - minimums[i][1]) < minimums[i][1] * 0.005:
-                del minimums[i]
-                caught = True
-
-
-def median(minimums, k=2):
-    result = []
-    for i in range(int(k / 2), len(minimums) - int(k / 2)):
-        result.append(sorted(minimums[i - int(k / 2): i + int(numpy.ceil(k / 2))])[int(k / 2)])
-    return result
-
-
-def push_back_increasing(maximums, price):
-    while maximums and price[1] >= maximums[-1][1]:
-        del maximums[-1]
-    maximums.append(price)
+def push_back_increasing(ms, p):
+    while ms and p[1] >= ms[-1][1]:
+        del ms[-1]
+    ms.append(p)
 
 
 def scale(d):
@@ -56,8 +34,8 @@ maximum_first_wavelength = 2
 counter = 0
 isin_counter = 0
 tot_profit = 0
-for isin_csv_path in os.listdir('data/tsedata/'):
-    reader = csv.reader(open('data/tsedata/' + isin_csv_path, encoding='utf-16'))
+for isin_csv_path in os.listdir('tsedata/'):
+    reader = csv.reader(open('tsedata/' + isin_csv_path, encoding='utf-16'))
     prices = []
     for row in reader:
         if is_float(row[5]):
@@ -65,7 +43,7 @@ for isin_csv_path in os.listdir('data/tsedata/'):
     if len(prices) < 800:
         continue
     isin_counter += 1
-    # prices = median(prices)
+
     minimums = []
     maximums = []
     k = 0
@@ -86,7 +64,11 @@ for isin_csv_path in os.listdir('data/tsedata/'):
         for to_delete in reversed(to_deletes):
             del last_extermums[to_delete]
         within_month_minimums = [last_extermum for last_extermum in last_extermums if last_extermum[1] > 0]
-        within_month_maximums = [(last_extermum[0], -last_extermum[1]) for last_extermum in last_extermums if last_extermum[1] < 0]
+        within_month_maximums = [
+            (last_extermum[0], -last_extermum[1])
+            for last_extermum in last_extermums
+            if last_extermum[1] < 0
+        ]
         if not within_month_minimums or not within_month_maximums:
             continue
         if within_month_minimums[0][0] < within_month_maximums[0][0]:
@@ -94,12 +76,16 @@ for isin_csv_path in os.listdir('data/tsedata/'):
         amplitude = max(last_extermum[1] for last_extermum in last_extermums) - min(last_extermum[1] for last_extermum in last_extermums)
         minimums_duration = max(x[0] for x in within_month_minimums) - min(x[0] for x in within_month_minimums)
         maximums_duration = max(x[0] for x in within_month_maximums) - min(x[0] for x in within_month_maximums)
-        # print(maximums_duration, minimums_duration)
+
         if maximums_duration > maximum_first_wavelength * minimums_duration:
             continue
         if minimums_duration > maximum_first_wavelength * maximums_duration:
             continue
-        if len(within_month_maximums) >= minimum_line_points and len(within_month_minimums) >= minimum_line_points and amplitude > percentage_amplitude * price:
+        if (
+                len(within_month_maximums) >= minimum_line_points and
+                len(within_month_minimums) >= minimum_line_points and
+                amplitude > percentage_amplitude * price
+        ):
             x1 = numpy.array([m[0] for m in within_month_minimums])
             y1 = numpy.array([-m[1] for m in within_month_minimums])
             x2 = numpy.array([m[0] for m in within_month_maximums])
@@ -124,11 +110,14 @@ for isin_csv_path in os.listdir('data/tsedata/'):
                         range(len(prices)),
                         prices
                     )
+                    fig = pyplot.figure()
                     pyplot.plot(*zip(*within_month_maximums))
                     pyplot.plot(*zip(*within_month_minimums))
+                    fig.suptitle('سلام')
                     pyplot.show()
                 print(tot_profit / counter)
             except IndexError:
                 pass
+
 print(tot_profit / counter)
 print(isin_counter)
