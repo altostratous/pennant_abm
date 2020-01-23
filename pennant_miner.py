@@ -3,11 +3,8 @@ from sklearn.metrics import r2_score
 from matplotlib import pyplot
 import os
 import csv
-from arabic_reshaper import reshape as _reshape
 
-
-def reshape(s):
-    return ''.join(reversed(_reshape(s)))
+from utils import reshape
 
 
 def is_float(s):

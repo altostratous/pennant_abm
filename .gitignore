@@ -1,2 +1,4 @@
+images/
+__pycache__/
 tsedata/*
 !tsedata/IRO3MSZ96020.csv
