@@ -1,4 +1,5 @@
 images/
 __pycache__/
 tsedata/*
+pennant_data_set.pkl
 !tsedata/IRO3MSZ96020.csv

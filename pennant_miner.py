@@ -3,6 +3,7 @@ from sklearn.metrics import r2_score
 from matplotlib import pyplot
 import os
 import csv
+import pickle
 
 from utils import reshape
 
@@ -32,19 +33,24 @@ pattern_days = 30
 sell_delay = 60
 percentage_amplitude = 0.1
 maximum_first_wavelength = 2
+show_success_cases = False
+collect_data_set = os.path.exists('pennant_data_set.pkl')
 
 counter = 0
 isin_counter = 0
 tot_profit = 0
 set_of_isins = set()
 set_of_experienced_isins = set()
+data_set = []
 for isin_csv_path in os.listdir('tsedata/'):
     set_of_isins.add(isin_csv_path)
     reader = csv.reader(open('tsedata/' + isin_csv_path, encoding='utf-16'))
+    isin_data = []
     prices = []
     for row in reader:
         if is_float(row[5]):
             prices.append(float(row[5]))
+            isin_data.append(row)
     if len(prices) < 800:
         continue
     isin_counter += 1
@@ -110,7 +116,9 @@ for isin_csv_path in os.listdir('tsedata/'):
                 tot_profit += profit
                 last_do = i
                 counter += 1
-                if profit > 0.1:
+                if collect_data_set:
+                    data_set.append(isin_data[max(0, i - pattern_days - sell_delay):i + 1])
+                if profit > 0.1 and show_success_cases:
                     pyplot.xlabel(reshape('شماره‌ی روز'))
                     pyplot.ylabel(reshape('قیمت'))
                     pyplot.plot(
@@ -126,6 +134,8 @@ for isin_csv_path in os.listdir('tsedata/'):
             except IndexError:
                 pass
 
+if collect_data_set:
+    pickle.dump(data_set, open('pennant_data_set.pkl', mode='wb'))
 print(tot_profit / counter)
 print(len(set_of_isins), len(set_of_experienced_isins))
 
