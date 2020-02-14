@@ -5,7 +5,6 @@ import numpy
 
 
 class NormalDistribution:
-
     slug = 'normal'
     verbose = reshape('نرمال')
 
@@ -18,7 +17,6 @@ class NormalDistribution:
 
 
 class BimodalNormalDistribution:
-
     slug = 'bimodal'
     verbose = reshape('نرمال دو قله‌ای')
 
@@ -34,7 +32,6 @@ class BimodalNormalDistribution:
 
 
 class UniformDistribution:
-
     slug = 'uniform'
     verbose = reshape('همگن')
 
@@ -50,40 +47,63 @@ class Instrument:
 
     def __init__(self,
                  prior_ask_probability=0.1,
-                 initial_return_distribution=NormalDistribution) -> None:
+                 initial_return_distribution=NormalDistribution,
+                 closing_prices=(1200, 1300, 1100, 1200)) -> None:
         super().__init__()
         self.fee = 0.02
         self.prior_ask_probability = prior_ask_probability
-        self.closing_prices = [1200, 1300, 1100, 1200]
-        self.prior_price_distribution = initial_return_distribution(self.closing_prices[-1], 200)
-        self.last_high = 1300
-        self.last_low = 1100
+        self.closing_prices = list(closing_prices)
+        self.highs, self.lows = self.get_past_low_highs(self.get_distinct_prices())
+        self.last_high = self.highs[-1]
+        self.last_low = self.lows[-1]
+        self.prior_price_distribution = initial_return_distribution(
+            self.closing_price,
+            max(self.closing_prices) - min(self.closing_prices)
+        )
         self.day_transactions = []
         self.bid_queue = []
         self.ask_queue = []
         self.volumes = []
-        self.highs = [self.last_high]
-        self.lows = [self.last_low]
         self.low_log = []
         self.high_log = []
+
+    @property
+    def closing_price(self):
+        return self.closing_prices[-1]
 
     def close(self):
         if self.day_transactions:
             self.closing_prices.append(int(round(numpy.average(self.day_transactions))))
         else:
-            self.closing_prices.append(self.closing_prices[-1])
+            self.closing_prices.append(self.closing_price)
         self.volumes.append(len(self.day_transactions))
         self.day_transactions = []
+        distinct_prices = self.get_distinct_prices()
+        assert len(distinct_prices) >= 3
+        highs, lows = self.get_past_low_highs(distinct_prices[-3:])
+        if highs:
+            self.last_high = highs[-1]
+        if lows:
+            self.last_low = lows[-1]
+        self.low_log.append(self.last_low)
+        self.high_log.append(self.last_high)
+
+    def get_past_low_highs(self, distinct_prices):
+        highs = []
+        lows = []
+        for i in range(-len(distinct_prices) + 2, 0, 1):
+            if distinct_prices[i - 2] <= distinct_prices[i - 1] > distinct_prices[i]:
+                highs.append(self.closing_prices[-2])
+            if distinct_prices[i - 2] >= distinct_prices[i - 1] < distinct_prices[i]:
+                lows.append(self.closing_prices[-2])
+        return highs, lows
+
+    def get_distinct_prices(self):
         equiless = [self.closing_prices[0]]
         for p in self.closing_prices:
             if equiless[-1] != p:
                 equiless.append(p)
-        if equiless[-3] <= equiless[-2] > equiless[-1]:
-            self.last_high = self.closing_prices[-2]
-        if equiless[-3] >= equiless[-2] < equiless[-1]:
-            self.last_low = self.closing_prices[-2]
-        self.low_log.append(self.last_low)
-        self.high_log.append(self.last_high)
+        return equiless
 
     def bid(self, stock_holder, price):
         if self.ask_queue:
@@ -153,7 +173,8 @@ class MarkerCore:
         holders_to_all_ratio = self.holders_to_seekers_ratio / (1 + self.holders_to_seekers_ratio)
         all_to_holders_ratio = 1 / holders_to_all_ratio
         self.stock_holders = [StockHolder(self) for _ in
-                              range(int(all_to_holders_ratio * int(self.number_of_stock_holders / self.number_of_instruments)))]
+                              range(int(all_to_holders_ratio * int(
+                                  self.number_of_stock_holders / self.number_of_instruments)))]
         for instrument in self.instruments:
             for i in range(int(len(self.stock_holders) / all_to_holders_ratio)):
                 self.stock_holders[i].initially_own(instrument)
@@ -187,7 +208,8 @@ class MarkerCore:
                 if not bought_price:
                     y.append(0)
                 else:
-                    last_price = instrument.day_transactions[-1] if instrument.day_transactions else instrument.closing_prices[-1]
+                    last_price = instrument.day_transactions[-1] if instrument.day_transactions else \
+                    instrument.closing_prices[-1]
                     y.append(last_price - bought_price * (1 + self.fee))
             pyplot.figure(figsize=(5, 10))
             ax = pyplot.subplot(3, 1, 1)
@@ -290,66 +312,11 @@ class StockHolder:
                 return True
         else:
             if bid_price <= instrument.last_high:
-                action_probability = (instrument.last_high - bid_price) / max(instrument.last_high - instrument.last_low, 1)
+                action_probability = (instrument.last_high - bid_price) / max(
+                    instrument.last_high - instrument.last_low, 1)
             else:
                 action_probability = instrument.prior_ask_probability
             # action_probability = (instrument.last_high - bid_price) / (instrument.last_high - instrument.last_low)
             if random.random() < action_probability:
                 return True
         return False
-
-
-variations = {
-    'initial_return_distribution': (
-        NormalDistribution,
-        BimodalNormalDistribution,
-        UniformDistribution,
-    ),
-    'holders_to_seekers_ratio': (
-        0.02,
-        0.06,
-        0.1
-    ),
-    'prior_ask_probability': (
-        0.05,
-        0.2,
-        0.4
-    )
-}
-
-translation = {
-    'h.r.': 'نسبت مالکین',
-    'p.p.': 'احتمال ثابت تقاضا',
-    'r.d.': 'توزیع اولیه‌ی سود',
-    'initial_return_distribution': 'توزیع اولیه‌ی سود‌ها',
-    'holders_to_seekers_ratio': 'نسبت مالکین به غیر مالکین',
-    'prior_ask_probability': 'احتمال ثابت تقاضا'
-}
-
-description_latex = 'می‌توانید '
-latex = ''
-for parameter in variations:
-    description_latex += 'نتیجه‌ی حساسیت مدل نسبت به {} را در شکل‌های '.format(
-        translation[parameter]
-    )
-    for value in variations[parameter]:
-        market_core = MarkerCore(**{parameter: value})
-        latex += '\\begin{figure}'
-        for _ in range(2):
-            latex += '\\begin{subfigure}{0.5\\textwidth}'
-            for __ in range(45):
-                market_core.simulate_one_day()
-            latex += '\\includegraphics[width=\\textwidth]{' + market_core.draw() + '.png}'
-            print(market_core.instruments[0].closing_prices[-1])
-            latex += '\\end{subfigure}'
-        latex += '\\caption{' + 'بررسی حساسیت مدل نسبت به {} با مقدار {}'.format(
-            translation[parameter],
-            reshape(value.verbose) if hasattr(value, 'verbose') else value
-        ) + '}'
-        label = parameter + str(value.slug if hasattr(value, 'verbose') else value)
-        description_latex += '\\رجوع{' + label + '}، '
-        latex += '\\label{' + label + '}\\end{figure}'
-
-description_latex += ' مشاهده کنید.'
-print(latex)
-print(description_latex)
