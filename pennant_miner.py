@@ -118,7 +118,7 @@ def mine_time_series(price_time_series):
                 )
                 isin_data_set.append(
                     {
-                        'time_series': isin_data[start_point:i + sell_delay + 1],
+                        'time_series': price_time_series[start_point:i + sell_delay + 1],
                         'buy_point': i - start_point,
                     }
                 )

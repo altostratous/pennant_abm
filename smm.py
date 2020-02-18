@@ -6,6 +6,7 @@ from pennant_miner import mine_time_series
 from pennant_model import MarketCore
 from constants import VARIATIONS
 from copy import copy
+from utils import pw
 from matplotlib import pyplot
 
 
@@ -65,19 +66,24 @@ class PennantLength(PennantModelStylizedFacts):
     @classmethod
     def extract_fact(cls, price_time_series: list):
         isin_data_set, tot_isin_profit, counter = mine_time_series(price_time_series)
-        return isin_data_set[0]['buy_point']
+        try:
+            return isin_data_set[0]['buy_point']
+        except IndexError:
+            pass
 
 
 def smm_error(data_set, parameters, facts, w: numpy.ndarray):
     real_time_series_collection = []
     simulated_time_series_collection = []
-    trade_simulation_count = 10
+    trade_simulation_count = 1
+    pw.plan('simulations', len(data_set))
     for trade in data_set:
         real_time_series = [float(x[5]) for x in trade['time_series']]
         for _ in range(trade_simulation_count):
             simulated_time_series = simulate(parameters, real_time_series)
             real_time_series_collection.append(real_time_series)
             simulated_time_series_collection.append(simulated_time_series)
+        pw.done('simulations')
     fact_errors = []
     for fact in facts:
         fact_instance = fact(real_data=real_time_series_collection, simulated_data=simulated_time_series_collection)
@@ -90,12 +96,14 @@ def simulate(parameters, real_time_series):
     real_time_series_len = len(real_time_series)
     simulation_hint_len = int(real_time_series_len / 4)
     market = MarketCore(**parameters, closing_prices=real_time_series[:simulation_hint_len])
+    pw.plan('days', real_time_series_len - len(market.instruments[0].closing_prices))
     while len(market.instruments[0].closing_prices) < real_time_series_len:
         market.simulate_one_day()
+        pw.done('days')
     simulated_time_series = market.instruments[0].closing_prices.copy()
-    pyplot.plot(range(real_time_series_len), real_time_series)
-    pyplot.plot(range(real_time_series_len), simulated_time_series)
-    pyplot.show()
+    # pyplot.plot(range(real_time_series_len), real_time_series)
+    # pyplot.plot(range(real_time_series_len), simulated_time_series)
+    # pyplot.show()
     return simulated_time_series
 
 
@@ -104,11 +112,13 @@ def smm_optimize(data_set, search_space, facts, w):
         raise ValueError('Search space must not be empty!')
     minimum_error = None
     minimal_parameters = None
+    pw.plan('parameters', len(search_space))
     for parameters in search_space:
         simulation_error = smm_error(data_set, parameters, facts, w)
         if minimum_error is None or simulation_error < minimum_error:
             minimum_error = simulation_error
             minimal_parameters = parameters
+        pw.done('parameters')
     return minimal_parameters
 
 
@@ -136,7 +146,6 @@ if __name__ == '__main__':
     test_set, training_set = get_test_data()
     stylized_facts = (
         Return,
-        PennantLength,
     )
 
     parameters_search_space = generate_parameters_search_space()

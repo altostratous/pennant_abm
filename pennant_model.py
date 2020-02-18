@@ -19,6 +19,10 @@ class Instrument:
         self.prior_ask_probability = prior_ask_probability
         self.closing_prices = list(closing_prices)
         self.highs, self.lows = self.get_past_low_highs(self.get_distinct_prices())
+        if not self.highs:
+            self.highs.append(max(self.closing_prices))
+        if not self.lows:
+            self.lows.append(min(self.closing_prices))
         self.last_high = self.highs[-1]
         self.last_low = self.lows[-1]
         self.prior_price_distribution = initial_return_distribution(
@@ -247,7 +251,7 @@ class StockHolder:
         self.basket = {}
 
     def initially_own(self, instrument):
-        self.basket[instrument] = instrument.prior_price_distribution.sample()
+        self.basket[instrument] = max(1, instrument.prior_price_distribution.sample())
 
     def has(self, instrument):
         return instrument in self.basket
