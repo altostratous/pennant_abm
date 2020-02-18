@@ -1,46 +1,9 @@
 import random
 from matplotlib import pyplot
+
+from distributions import NormalDistribution
 from utils import reshape
 import numpy
-
-
-class NormalDistribution:
-    slug = 'normal'
-    verbose = reshape('نرمال')
-
-    def __init__(self, mu, sigma) -> None:
-        super().__init__()
-        self.mu, self.sigma = mu, sigma
-
-    def sample(self):
-        return int(numpy.random.normal(self.mu, self.sigma, 1)[0])
-
-
-class BimodalNormalDistribution:
-    slug = 'bimodal'
-    verbose = reshape('نرمال دو قله‌ای')
-
-    def __init__(self, mu, sigma) -> None:
-        super().__init__()
-        self.mu, self.sigma = mu, sigma
-
-    def sample(self):
-        if random.random() < 0.5:
-            return int(numpy.random.normal(self.mu + self.sigma, self.sigma, 1)[0])
-        else:
-            return int(numpy.random.normal(self.mu - self.sigma, self.sigma, 1)[0])
-
-
-class UniformDistribution:
-    slug = 'uniform'
-    verbose = reshape('همگن')
-
-    def __init__(self, mu, sigma) -> None:
-        super().__init__()
-        self.mu, self.sigma = mu, sigma
-
-    def sample(self):
-        return int(numpy.random.uniform(self.mu - self.sigma, self.mu + self.sigma, 1)[0])
 
 
 class Instrument:
@@ -48,8 +11,10 @@ class Instrument:
     def __init__(self,
                  prior_ask_probability=0.1,
                  initial_return_distribution=NormalDistribution,
-                 closing_prices=(1200, 1300, 1100, 1200)) -> None:
+                 closing_prices=None) -> None:
         super().__init__()
+        if not closing_prices:
+            closing_prices = (1200, 1300, 1100, 1200)
         self.fee = 0.02
         self.prior_ask_probability = prior_ask_probability
         self.closing_prices = list(closing_prices)
@@ -134,12 +99,13 @@ class Instrument:
         self.ask_queue.sort(key=lambda x: x[0], reverse=True)
 
 
-class MarkerCore:
+class MarketCore:
 
     def __init__(self,
                  holders_to_seekers_ratio=None,
                  prior_ask_probability=None,
-                 initial_return_distribution=None) -> None:
+                 initial_return_distribution=None,
+                 closing_prices=None) -> None:
         self.description = {}
 
         if not holders_to_seekers_ratio:
@@ -167,7 +133,8 @@ class MarkerCore:
         self.instruments = [
             Instrument(
                 prior_ask_probability=prior_ask_probability,
-                initial_return_distribution=initial_return_distribution
+                initial_return_distribution=initial_return_distribution,
+                closing_prices=closing_prices,
             )
         ]
         holders_to_all_ratio = self.holders_to_seekers_ratio / (1 + self.holders_to_seekers_ratio)

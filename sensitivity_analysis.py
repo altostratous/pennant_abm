@@ -1,24 +1,8 @@
-from pennant_model import BimodalNormalDistribution, UniformDistribution, NormalDistribution, MarkerCore
+from constants import VARIATIONS
+from pennant_model import MarketCore
 from utils import reshape
 
 if __name__ == '__main__':
-    variations = {
-        'initial_return_distribution': (
-            NormalDistribution,
-            BimodalNormalDistribution,
-            UniformDistribution,
-        ),
-        'holders_to_seekers_ratio': (
-            0.02,
-            0.06,
-            0.1
-        ),
-        'prior_ask_probability': (
-            0.05,
-            0.2,
-            0.4
-        )
-    }
 
     translation = {
         'h.r.': 'نسبت مالکین',
@@ -31,12 +15,12 @@ if __name__ == '__main__':
 
     description_latex = 'می‌توانید '
     latex = ''
-    for parameter in variations:
+    for parameter in VARIATIONS:
         description_latex += 'نتیجه‌ی حساسیت مدل نسبت به {} را در شکل‌های '.format(
             translation[parameter]
         )
-        for value in variations[parameter]:
-            market_core = MarkerCore(**{parameter: value})
+        for value in VARIATIONS[parameter]:
+            market_core = MarketCore(**{parameter: value})
             latex += '\\begin{figure}'
             for _ in range(2):
                 latex += '\\begin{subfigure}{0.5\\textwidth}'
