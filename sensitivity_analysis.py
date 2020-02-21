@@ -1,23 +1,14 @@
-from constants import VARIATIONS
+from constants import VARIATIONS, TRANSLATION
 from pennant_model import MarketCore
 from utils import reshape
 
 if __name__ == '__main__':
 
-    translation = {
-        'h.r.': 'نسبت مالکین',
-        'p.p.': 'احتمال ثابت تقاضا',
-        'r.d.': 'توزیع اولیه‌ی سود',
-        'initial_return_distribution': 'توزیع اولیه‌ی سود‌ها',
-        'holders_to_seekers_ratio': 'نسبت مالکین به غیر مالکین',
-        'prior_ask_probability': 'احتمال ثابت تقاضا'
-    }
-
     description_latex = 'می‌توانید '
     latex = ''
     for parameter in VARIATIONS:
         description_latex += 'نتیجه‌ی حساسیت مدل نسبت به {} را در شکل‌های '.format(
-            translation[parameter]
+            TRANSLATION[parameter]
         )
         for value in VARIATIONS[parameter]:
             market_core = MarketCore(**{parameter: value})
@@ -30,7 +21,7 @@ if __name__ == '__main__':
                 print(market_core.instruments[0].closing_prices[-1])
                 latex += '\\end{subfigure}'
             latex += '\\caption{' + 'بررسی حساسیت مدل نسبت به {} با مقدار {}'.format(
-                translation[parameter],
+                TRANSLATION[parameter],
                 reshape(value.verbose) if hasattr(value, 'verbose') else value
             ) + '}'
             label = parameter + str(value.slug if hasattr(value, 'verbose') else value)

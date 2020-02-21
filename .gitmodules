@@ -1,0 +1,3 @@
+[submodule "pygsl_div"]
+	path = pygsl_div
+	url = https://github.com/sandtable/pygsl-div.git

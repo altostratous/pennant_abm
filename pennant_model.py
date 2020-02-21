@@ -1,6 +1,7 @@
 import random
 from matplotlib import pyplot
 
+from constants import TRANSLATION
 from distributions import NormalDistribution
 from utils import reshape
 import numpy
@@ -239,7 +240,7 @@ class MarketCore:
 
     def translated_description(self):
         return {
-            translation[key]: value for key, value in self.description.items()
+            TRANSLATION[key]: value for key, value in self.description.items()
         }
 
 
