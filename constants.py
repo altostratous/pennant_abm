@@ -2,18 +2,25 @@ from distributions import NormalDistribution, BimodalNormalDistribution, Uniform
 
 VARIATIONS = {
     'initial_return_distribution': (
-        NormalDistribution,
+        # NormalDistribution,
         BimodalNormalDistribution,
-        UniformDistribution,
+        # UniformDistribution,
     ),
     'holders_to_seekers_ratio': (
         0.02,
+        0.04,
         0.06,
+        0.08,
         0.1
     ),
     'prior_ask_probability': (
         0.05,
+        0.1,
+        0.15,
         0.2,
+        0.25,
+        0.3,
+        0.35,
         0.4
     )
 }
@@ -27,5 +34,7 @@ TRANSLATION = {
 }
 
 PENNANT_MODEL_OPTIMUM_PARAMETERS = {
-    parameter: values[1] for parameter, values in VARIATIONS.items()
+    'initial_return_distribution': BimodalNormalDistribution,
+    'holders_to_seekers_ratio': 0.08,
+    'prior_ask_probability': 0.15
 }

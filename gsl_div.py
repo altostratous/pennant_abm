@@ -33,16 +33,18 @@ if __name__ == '__main__':
     divergences = defaultdict(list)
     for trade in test_data:
         real_time_series = get_time_series_from_trade(trade)
-        # pyplot.plot(range(len(real_time_series)), real_time_series, label='real')
+        pyplot.plot(range(len(real_time_series)), real_time_series, label='real')
+        i = 0
         for simulator_name, simulator in simulators.items():
+            i += 100
             simulated_time_series = simulator(real_time_series)
-            # pyplot.plot(range(len(simulated_time_series)), simulated_time_series, label=simulator_name)
+            pyplot.plot(range(len(simulated_time_series)), [x + i for x in simulated_time_series], label=simulator_name)
             divergences[simulator_name].append(gsl_div(
-                numpy.array([get_growth_series(real_time_series)]),
-                numpy.array([get_growth_series(simulated_time_series)]),
+                numpy.array([real_time_series]),
+                numpy.array([simulated_time_series]),
             ))
-        # pyplot.legend()
-        # pyplot.show()
+        pyplot.legend()
+        pyplot.show()
         for simulator_name, divs in divergences.items():
-            print(simulator_name, numpy.mean(divs))
+            print(simulator_name, divs[-1])
         print()

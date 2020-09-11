@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import numpy
-
+import csv
 from utils import get_test_data, get_simulation_hint_series
 from pennant_miner import mine_time_series
 from pennant_model import MarketCore
@@ -167,14 +167,22 @@ def smm_optimize(data_set, search_space, facts, w):
         raise ValueError('Search space must not be empty!')
     minimum_error = None
     minimal_parameters = None
-    pw.plan('parameters', len(search_space))
-    for parameters in search_space:
-        print(parameters)
-        simulation_error = smm_error(data_set, parameters, facts, w)
-        if minimum_error is None or simulation_error < minimum_error:
-            minimum_error = simulation_error
-            minimal_parameters = parameters
-        pw.done('parameters')
+    with open('opt_report.csv', mode='w') as report_file:
+        writer = csv.writer(report_file)
+        pw.plan('parameters', len(search_space))
+        for parameters in search_space:
+            simulation_error = smm_error(data_set, parameters, facts, w)
+            if minimum_error is None or simulation_error < minimum_error:
+                minimum_error = simulation_error
+                minimal_parameters = parameters
+            pw.done('parameters')
+            writer.writerow([
+                parameters['holders_to_seekers_ratio'],
+                parameters['prior_ask_probability'],
+                simulation_error,
+            ])
+            report_file.flush()
+
     return minimal_parameters
 
 
@@ -199,7 +207,7 @@ def generate_parameters_search_space(variations=VARIATIONS):
 
 
 if __name__ == '__main__':
-    test_set, training_set = get_test_data()
+    test_set, training_set = get_test_data(test_ratio=0.8)
     stylized_facts = (
         Return60,
         Return30,
